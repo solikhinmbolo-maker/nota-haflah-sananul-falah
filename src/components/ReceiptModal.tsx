@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+import { toBlob, toJpeg, toPng } from 'html-to-image';
 import { ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
 import { formatRupiahNumberOnly, angkaTerbilang } from '../utils/terbilang';
@@ -54,80 +54,63 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   if (!isOpen || !data) return null;
 
-  const triggerCanvasDownload = (
-    canvas: HTMLCanvasElement,
-    filename: string,
-    mimeType: 'image/jpeg' | 'image/png' = 'image/jpeg',
-    quality = 0.95
-  ) => {
-    if (canvas.toBlob) {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => {
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }, 1000);
-          } else {
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL(mimeType, quality);
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-        },
-        mimeType,
-        quality
-      );
+  const downloadBlobOrUrl = (blobOrUrl: Blob | string, filename: string) => {
+    const link = document.createElement('a');
+    if (typeof blobOrUrl === 'string') {
+      link.href = blobOrUrl;
     } else {
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL(mimeType, quality);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      link.href = URL.createObjectURL(blobOrUrl);
     }
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      if (typeof blobOrUrl !== 'string') {
+        URL.revokeObjectURL(link.href);
+      }
+    }, 1000);
   };
 
   const handleDownloadJPEG = async () => {
     if (!printRef.current) return;
     try {
       setIsDownloading(true);
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2.5, // Crisp 2.5x resolution (2875 x 1350 px)
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: 1150,
-        height: 540,
-        onclone: (clonedDoc) => {
-          const clonedEl =
-            clonedDoc.getElementById('areaCetak') ||
-            clonedDoc.querySelector('.receipt-print-root');
-          if (clonedEl) {
-            (clonedEl as HTMLElement).style.transform = 'none';
-            if (clonedEl.parentElement) {
-              (clonedEl.parentElement as HTMLElement).style.transform = 'none';
-            }
-          }
-        },
-      });
-
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.jpeg`;
 
-      triggerCanvasDownload(canvas, filename, 'image/jpeg', 0.95);
+      const options = {
+        quality: 0.95,
+        pixelRatio: 2, // 2x sharp resolution (2300 x 1080 px)
+        backgroundColor: '#ffffff',
+        width: 1150,
+        height: 540,
+        style: {
+          transform: 'none',
+          boxShadow: 'none',
+        },
+      };
+
+      let blob: Blob | null = null;
+      try {
+        blob = await toBlob(printRef.current, options);
+      } catch (errFonts) {
+        console.warn('Direct toBlob failed, retrying with skipFonts:', errFonts);
+        blob = await toBlob(printRef.current, { ...options, skipFonts: true });
+      }
+
+      if (blob) {
+        downloadBlobOrUrl(blob, filename);
+      } else {
+        const dataUrl = await toJpeg(printRef.current, { ...options, skipFonts: true });
+        downloadBlobOrUrl(dataUrl, filename);
+      }
     } catch (err) {
       console.error('Error generating JPEG:', err);
-      alert('Gagal membuat gambar kuitansi: ' + ((err as Error)?.message || 'Silakan coba lagi atau gunakan opsi Cetak.'));
+      alert(
+        'Gagal membuat gambar kuitansi: ' +
+          ((err as Error)?.message || 'Silakan coba lagi atau gunakan opsi Cetak.')
+      );
     } finally {
       setIsDownloading(false);
     }
@@ -137,31 +120,34 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     if (!printRef.current) return;
     try {
       setIsDownloading(true);
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2.5,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: 1150,
-        height: 540,
-        onclone: (clonedDoc) => {
-          const clonedEl =
-            clonedDoc.getElementById('areaCetak') ||
-            clonedDoc.querySelector('.receipt-print-root');
-          if (clonedEl) {
-            (clonedEl as HTMLElement).style.transform = 'none';
-            if (clonedEl.parentElement) {
-              (clonedEl.parentElement as HTMLElement).style.transform = 'none';
-            }
-          }
-        },
-      });
-
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `Kuitansi_Haflah_${cleanName}.png`;
 
-      triggerCanvasDownload(canvas, filename, 'image/png');
+      const options = {
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        width: 1150,
+        height: 540,
+        style: {
+          transform: 'none',
+          boxShadow: 'none',
+        },
+      };
+
+      let blob: Blob | null = null;
+      try {
+        blob = await toBlob(printRef.current, { ...options, type: 'image/png' });
+      } catch (errFonts) {
+        console.warn('Direct PNG toBlob failed, retrying with skipFonts:', errFonts);
+        blob = await toBlob(printRef.current, { ...options, skipFonts: true, type: 'image/png' });
+      }
+
+      if (blob) {
+        downloadBlobOrUrl(blob, filename);
+      } else {
+        const dataUrl = await toPng(printRef.current, { ...options, skipFonts: true });
+        downloadBlobOrUrl(dataUrl, filename);
+      }
     } catch (err) {
       console.error('Error generating PNG:', err);
       alert('Gagal membuat gambar PNG: ' + ((err as Error)?.message || 'Silakan coba lagi.'));

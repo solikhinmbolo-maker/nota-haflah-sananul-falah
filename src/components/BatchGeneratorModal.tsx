@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import html2canvas from 'html2canvas';
+import { toBlob, toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
 import { SantriRecord, ReceiptConfig, ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
@@ -85,25 +85,30 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
 
         const targetEl = document.getElementById('batch-card-inner');
         if (targetEl) {
-          const canvas = await html2canvas(targetEl, {
-            scale: 2, // 2x for optimal batch speed and file size
+          const options = {
+            quality: 0.92,
+            pixelRatio: 2,
             backgroundColor: '#ffffff',
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
             width: 1150,
             height: 540,
-            onclone: (clonedDoc) => {
-              const el = clonedDoc.getElementById('batch-card-inner');
-              if (el) {
-                el.style.transform = 'none';
-              }
+            style: {
+              transform: 'none',
+              boxShadow: 'none',
             },
-          });
+          };
 
-          const blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92)
-          );
+          let blob: Blob | null = null;
+          try {
+            blob = await toBlob(targetEl, options);
+          } catch {
+            blob = await toBlob(targetEl, { ...options, skipFonts: true });
+          }
+
+          if (!blob) {
+            const dataUrl = await toJpeg(targetEl, { ...options, skipFonts: true });
+            const res = await fetch(dataUrl);
+            blob = await res.blob();
+          }
 
           if (blob && folder) {
             const safeName = `${String(i + 1).padStart(2, '0')}_${s.nama.replace(/[^a-zA-Z0-9]/g, '_')}.jpeg`;
@@ -237,7 +242,6 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
             position: 'fixed',
             left: '-9999px',
             top: '-9999px',
-            opacity: 0,
             pointerEvents: 'none',
           }}
         >
