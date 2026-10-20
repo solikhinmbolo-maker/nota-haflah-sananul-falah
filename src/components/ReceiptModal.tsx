@@ -54,30 +54,80 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   if (!isOpen || !data) return null;
 
+  const triggerCanvasDownload = (
+    canvas: HTMLCanvasElement,
+    filename: string,
+    mimeType: 'image/jpeg' | 'image/png' = 'image/jpeg',
+    quality = 0.95
+  ) => {
+    if (canvas.toBlob) {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }, 1000);
+          } else {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL(mimeType, quality);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        },
+        mimeType,
+        quality
+      );
+    } else {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL(mimeType, quality);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const handleDownloadJPEG = async () => {
     if (!printRef.current) return;
     try {
       setIsDownloading(true);
       const canvas = await html2canvas(printRef.current, {
-        scale: 3, // Ultra-crisp 300 DPI equivalent
+        scale: 2.5, // Crisp 2.5x resolution (2875 x 1350 px)
         backgroundColor: '#ffffff',
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: false,
         width: 1150,
         height: 540,
+        onclone: (clonedDoc) => {
+          const clonedEl =
+            clonedDoc.getElementById('areaCetak') ||
+            clonedDoc.querySelector('.receipt-print-root');
+          if (clonedEl) {
+            (clonedEl as HTMLElement).style.transform = 'none';
+            if (clonedEl.parentElement) {
+              (clonedEl.parentElement as HTMLElement).style.transform = 'none';
+            }
+          }
+        },
       });
 
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.jpeg`;
 
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.click();
+      triggerCanvasDownload(canvas, filename, 'image/jpeg', 0.95);
     } catch (err) {
       console.error('Error generating JPEG:', err);
-      alert('Gagal membuat gambar kuitansi. Silakan coba lagi atau gunakan opsi Cetak.');
+      alert('Gagal membuat gambar kuitansi: ' + ((err as Error)?.message || 'Silakan coba lagi atau gunakan opsi Cetak.'));
     } finally {
       setIsDownloading(false);
     }
@@ -88,24 +138,33 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     try {
       setIsDownloading(true);
       const canvas = await html2canvas(printRef.current, {
-        scale: 3,
+        scale: 2.5,
         backgroundColor: '#ffffff',
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: false,
         width: 1150,
         height: 540,
+        onclone: (clonedDoc) => {
+          const clonedEl =
+            clonedDoc.getElementById('areaCetak') ||
+            clonedDoc.querySelector('.receipt-print-root');
+          if (clonedEl) {
+            (clonedEl as HTMLElement).style.transform = 'none';
+            if (clonedEl.parentElement) {
+              (clonedEl.parentElement as HTMLElement).style.transform = 'none';
+            }
+          }
+        },
       });
 
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `Kuitansi_Haflah_${cleanName}.png`;
 
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      triggerCanvasDownload(canvas, filename, 'image/png');
     } catch (err) {
       console.error('Error generating PNG:', err);
+      alert('Gagal membuat gambar PNG: ' + ((err as Error)?.message || 'Silakan coba lagi.'));
     } finally {
       setIsDownloading(false);
     }

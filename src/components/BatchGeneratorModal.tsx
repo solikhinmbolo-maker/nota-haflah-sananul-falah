@@ -89,10 +89,16 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
             scale: 2, // 2x for optimal batch speed and file size
             backgroundColor: '#ffffff',
             useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             logging: false,
             width: 1150,
             height: 540,
+            onclone: (clonedDoc) => {
+              const el = clonedDoc.getElementById('batch-card-inner');
+              if (el) {
+                el.style.transform = 'none';
+              }
+            },
           });
 
           const blob = await new Promise<Blob | null>((resolve) =>

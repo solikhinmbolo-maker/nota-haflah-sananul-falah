@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { ActiveReceiptData } from '../types';
+import { DEFAULT_LOGO_BASE64, DEFAULT_TTD_BASE64 } from '../assets/receiptAssets';
 
 interface ReceiptCardProps {
   data: ActiveReceiptData;
@@ -86,7 +87,11 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
               }}
             >
               <img
-                src={data.logoUrl || 'https://i.ibb.co.com/kVycmPgF/2019-05-09-1-7.png'}
+                src={
+                  data.logoUrl && !data.logoUrl.includes('kVycmPgF')
+                    ? data.logoUrl
+                    : DEFAULT_LOGO_BASE64
+                }
                 alt="Logo Ponpes"
                 crossOrigin="anonymous"
                 referrerPolicy="no-referrer"
@@ -487,8 +492,9 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
 
                 <img
                   src={
-                    data.ttdUrl ||
-                    'https://i.ibb.co.com/F4JFvHzd/Ttd-ku-1.png'
+                    data.ttdUrl && !data.ttdUrl.includes('F4JFvHzd')
+                      ? data.ttdUrl
+                      : DEFAULT_TTD_BASE64
                   }
                   alt="TTD Bendahara"
                   crossOrigin="anonymous"
