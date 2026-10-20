@@ -107,7 +107,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <h3
                   style={{
                     margin: 0,
@@ -116,6 +116,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     letterSpacing: '0.8px',
                     lineHeight: 1.15,
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {data.institutionName || 'PON-PES SANANUL FALAH'}
@@ -127,6 +128,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     fontWeight: 500,
                     color: '#f8fafc',
                     lineHeight: 1.3,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {data.institutionAddress ||

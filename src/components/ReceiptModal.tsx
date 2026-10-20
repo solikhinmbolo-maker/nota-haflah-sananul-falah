@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { toBlob, toJpeg, toPng } from 'html-to-image';
 import { ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
+import { RECEIPT_FONTS_CSS } from '../assets/receiptFonts';
 import { formatRupiahNumberOnly, angkaTerbilang } from '../utils/terbilang';
 import {
   Download,
@@ -29,6 +30,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [scale, setScale] = useState(0.85);
   const printRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,18 +75,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   const handleDownloadJPEG = async () => {
-    if (!printRef.current) return;
+    const targetNode = exportRef.current || printRef.current;
+    if (!targetNode) return;
     try {
       setIsDownloading(true);
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
       const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.jpeg`;
 
       const options = {
-        quality: 0.95,
-        pixelRatio: 2, // 2x sharp resolution (2300 x 1080 px)
+        quality: 0.96,
+        pixelRatio: 2, // 2x sharp resolution (2300 x 1080 px) matching exact canvas
         backgroundColor: '#ffffff',
         width: 1150,
         height: 540,
+        fontEmbedCSS: RECEIPT_FONTS_CSS,
         style: {
           transform: 'none',
           boxShadow: 'none',
@@ -93,16 +97,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
       let blob: Blob | null = null;
       try {
-        blob = await toBlob(printRef.current, options);
-      } catch (errFonts) {
-        console.warn('Direct toBlob failed, retrying with skipFonts:', errFonts);
-        blob = await toBlob(printRef.current, { ...options, skipFonts: true });
+        blob = await toBlob(targetNode, options);
+      } catch (errDirect) {
+        console.warn('Direct toBlob failed, retrying:', errDirect);
+        blob = await toBlob(targetNode, options);
       }
 
       if (blob) {
         downloadBlobOrUrl(blob, filename);
       } else {
-        const dataUrl = await toJpeg(printRef.current, { ...options, skipFonts: true });
+        const dataUrl = await toJpeg(targetNode, options);
         downloadBlobOrUrl(dataUrl, filename);
       }
     } catch (err) {
@@ -117,7 +121,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   };
 
   const handleDownloadPNG = async () => {
-    if (!printRef.current) return;
+    const targetNode = exportRef.current || printRef.current;
+    if (!targetNode) return;
     try {
       setIsDownloading(true);
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
@@ -128,6 +133,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         backgroundColor: '#ffffff',
         width: 1150,
         height: 540,
+        fontEmbedCSS: RECEIPT_FONTS_CSS,
         style: {
           transform: 'none',
           boxShadow: 'none',
@@ -136,16 +142,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
       let blob: Blob | null = null;
       try {
-        blob = await toBlob(printRef.current, { ...options, type: 'image/png' });
-      } catch (errFonts) {
-        console.warn('Direct PNG toBlob failed, retrying with skipFonts:', errFonts);
-        blob = await toBlob(printRef.current, { ...options, skipFonts: true, type: 'image/png' });
+        blob = await toBlob(targetNode, { ...options, type: 'image/png' });
+      } catch (errDirect) {
+        console.warn('Direct PNG toBlob failed, retrying:', errDirect);
+        blob = await toBlob(targetNode, { ...options, type: 'image/png' });
       }
 
       if (blob) {
         downloadBlobOrUrl(blob, filename);
       } else {
-        const dataUrl = await toPng(printRef.current, { ...options, skipFonts: true });
+        const dataUrl = await toPng(targetNode, options);
         downloadBlobOrUrl(dataUrl, filename);
       }
     } catch (err) {
@@ -438,6 +444,23 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               Unduh Versi PNG
             </button>
           </div>
+        </div>
+
+        {/* Dedicated 1:1 Pristine Render Target for Instant, Unscaled High-Fidelity Export */}
+        <div
+          id="receipt-export-node"
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: '-9999px',
+            width: '1150px',
+            height: '540px',
+            pointerEvents: 'none',
+            zIndex: -9999,
+          }}
+        >
+          <ReceiptCard ref={exportRef} data={data} scale={1} id="areaCetakExport" />
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { toBlob, toJpeg } from 'html-to-image';
 import JSZip from 'jszip';
 import { SantriRecord, ReceiptConfig, ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
+import { RECEIPT_FONTS_CSS } from '../assets/receiptFonts';
 import { formatRupiahNumberOnly, angkaTerbilang } from '../utils/terbilang';
 import { generateNoNota } from '../utils/sheetService';
 import { Archive, CheckCircle2, AlertCircle, Loader2, X } from 'lucide-react';
@@ -86,11 +87,12 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
         const targetEl = document.getElementById('batch-card-inner');
         if (targetEl) {
           const options = {
-            quality: 0.92,
+            quality: 0.95,
             pixelRatio: 2,
             backgroundColor: '#ffffff',
             width: 1150,
             height: 540,
+            fontEmbedCSS: RECEIPT_FONTS_CSS,
             style: {
               transform: 'none',
               boxShadow: 'none',
@@ -100,12 +102,13 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
           let blob: Blob | null = null;
           try {
             blob = await toBlob(targetEl, options);
-          } catch {
-            blob = await toBlob(targetEl, { ...options, skipFonts: true });
+          } catch (errDirect) {
+            console.warn('Batch toBlob direct attempt error, retrying:', errDirect);
+            blob = await toBlob(targetEl, options);
           }
 
           if (!blob) {
-            const dataUrl = await toJpeg(targetEl, { ...options, skipFonts: true });
+            const dataUrl = await toJpeg(targetEl, options);
             const res = await fetch(dataUrl);
             blob = await res.blob();
           }
