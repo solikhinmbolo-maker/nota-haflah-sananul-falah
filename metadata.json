@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Nota Digital Haflah Sananul Falah",
+  "description": "Aplikasi otomatisasi pembuatan, cetak, unduh JPEG/ZIP, dan sinkronisasi kuitansi resmi Haflah Pon-Pes Sananul Falah dengan Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

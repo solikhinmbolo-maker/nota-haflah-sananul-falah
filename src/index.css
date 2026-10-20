@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* Print Stylesheet for Official Receipts */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide everything except the receipt card */
+  header,
+  footer,
+  .modal-toolbar,
+  nav,
+  button,
+  .app-header,
+  .app-box,
+  .no-print {
+    display: none !important;
+  }
+
+  #modal {
+    position: static !important;
+    background: transparent !important;
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .receipt-print-root {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+}

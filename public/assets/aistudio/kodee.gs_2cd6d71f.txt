@@ -1,0 +1,71 @@
+var SPREADSHEET_ID = '18hSnNA8eRtdukicAHHqUjtwohEhKVt5uOPy-RdScXTE';
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+      .evaluate()
+      .setTitle('Sistem Nota Haflah')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function getClasses() {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var classes = [];
+  
+  for (var i = 5; i < data.length; i++) { 
+    var k = data[i][2]; 
+    if (k && classes.indexOf(k) === -1) { 
+      classes.push(k); 
+    }
+  }
+  return classes;
+}
+
+function getStudentsByClass(kelas) {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var students = [];
+  
+  for (var i = 5; i < data.length; i++) {
+    if (data[i][2] == kelas) {
+      var nom = data[i][6]; 
+      if (!nom || isNaN(nom)) nom = 0; 
+      
+      students.push({ 
+        nama: data[i][1],   
+        nominal: nom, 
+        row: i + 1          
+      });
+    }
+  }
+  return students;
+}
+
+function getDetailNotaFast(row) {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+  
+  var namaSantri = sheet.getRange(row, 2).getValue(); 
+  var kelas = sheet.getRange(row, 3).getValue();      
+  var tanggal = sheet.getRange(row, 4).getValue();    
+  var nominal = sheet.getRange(row, 7).getValue();    
+  var keterangan = sheet.getRange(row, 9).getValue(); // MENGAMBIL DATA DARI KOLOM I (KET)
+  
+  if (!nominal || isNaN(nominal)) nominal = 0;
+  var noNota = "00" + row + "/HFL/2026";
+  var nominalFormatted = "Rp " + Number(nominal).toLocaleString('id-ID') + ",-";
+  
+  if (tanggal instanceof Date) {
+    tanggal = Utilities.formatDate(tanggal, Session.getScriptTimeZone(), "dd MMMM yyyy");
+  } else if (!tanggal) {
+    tanggal = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd MMMM yyyy"); 
+  }
+  
+  return { 
+    noNota: noNota, 
+    tanggal: tanggal, 
+    namaSantri: namaSantri, 
+    kelas: kelas, 
+    nominalFormatted: nominalFormatted,
+    keterangan: keterangan // Mengirim status LUNAS ke depan
+  };
+}
