@@ -44,6 +44,7 @@ const DEFAULT_CONFIG: ReceiptConfig = {
   customYear: '2026',
   watermarkLunasText: 'LUNAS',
   showWatermark: true,
+  stampUrl: '/assets/stamp.png',
 };
 
 export default function App() {
@@ -192,6 +193,7 @@ export default function App() {
       bendaharaTitle: config.bendaharaTitle,
       logoUrl: config.logoUrl,
       ttdUrl: config.ttdUrl,
+      stampUrl: config.stampUrl || '/assets/stamp.png',
       institutionName: config.institutionName,
       institutionAddress: config.institutionAddress,
       receiptTitle: config.receiptTitle,

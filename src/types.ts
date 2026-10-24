@@ -29,6 +29,7 @@ export interface ReceiptConfig {
   customYear: string;
   watermarkLunasText: string;
   showWatermark: boolean;
+  stampUrl?: string;
 }
 
 export interface ActiveReceiptData {
@@ -46,6 +47,7 @@ export interface ActiveReceiptData {
   bendaharaTitle: string;
   logoUrl: string;
   ttdUrl: string;
+  stampUrl?: string;
   institutionName: string;
   institutionAddress: string;
   receiptTitle: string;

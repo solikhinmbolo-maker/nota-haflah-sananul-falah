@@ -74,6 +74,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
           bendaharaTitle: config.bendaharaTitle,
           logoUrl: config.logoUrl,
           ttdUrl: config.ttdUrl,
+          stampUrl: config.stampUrl || '/assets/stamp.png',
           institutionName: config.institutionName,
           institutionAddress: config.institutionAddress,
           receiptTitle: config.receiptTitle,

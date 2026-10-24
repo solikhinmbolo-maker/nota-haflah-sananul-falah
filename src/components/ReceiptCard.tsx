@@ -478,15 +478,41 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                   textAlign: 'center',
                   color: '#499f9e',
                   marginRight: '20px',
+                  position: 'relative',
                 }}
               >
+                {/* Stempel Pondok (Digeser ke Kiri Tanda Tangan Sesuai Contoh Resmi) */}
+                <img
+                  src={data.stampUrl || "/assets/stamp.png"}
+                  alt="Stempel Pondok"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  style={{
+                    position: 'absolute',
+                    top: '52%',
+                    left: '-20px',
+                    transform: 'translate(-50%, -50%) rotate(-4deg)',
+                    width: '138px',
+                    height: 'auto',
+                    zIndex: 1,
+                    opacity: 0.9,
+                    pointerEvents: 'none',
+                  }}
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    if (!img.src.includes('ibb.co')) {
+                      img.src = 'https://i.ibb.co.com/5gBd6yzC/logo-pondok-2.png';
+                    }
+                  }}
+                />
+
                 <div
                   style={{
                     fontSize: '14px',
                     fontWeight: 600,
                     marginBottom: '0px',
                     position: 'relative',
-                    zIndex: 1,
+                    zIndex: 2,
                   }}
                 >
                   {data.bendaharaTitle || 'Bendahara Haflah 2026'}
@@ -507,7 +533,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     margin: '-15px auto -20px auto',
                     display: 'block',
                     position: 'relative',
-                    zIndex: 2,
+                    zIndex: 3,
                   }}
                   onError={(e) => {
                     (e.target as HTMLElement).style.visibility = 'hidden';
@@ -520,7 +546,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     fontSize: '16px',
                     marginTop: '0px',
                     position: 'relative',
-                    zIndex: 3,
+                    zIndex: 4,
                     color: '#499f9e',
                     textDecoration: 'underline',
                   }}
