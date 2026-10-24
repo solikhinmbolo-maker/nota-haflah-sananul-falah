@@ -9,6 +9,7 @@ import {
   fetchSheetData,
   getFallbackData,
   generateNoNota,
+  isRecordLunas,
 } from './utils/sheetService';
 import {
   angkaTerbilang,
@@ -23,6 +24,7 @@ import {
   RefreshCw,
   Settings,
   CheckCircle,
+  Clock,
   ShieldCheck,
   Search,
   BookOpen,
@@ -67,6 +69,7 @@ export default function App() {
   // Quick form selection state
   const [quickClass, setQuickClass] = useState<string>('');
   const [quickStudentId, setQuickStudentId] = useState<string>('');
+  const [statScope, setStatScope] = useState<'all' | 'class'>('all');
 
   // Modals
   const [activeReceipt, setActiveReceipt] = useState<ActiveReceiptData | null>(null);
@@ -136,19 +139,17 @@ export default function App() {
     return records.find((r) => r.id === quickStudentId) || null;
   }, [records, quickStudentId]);
 
-  // Aggregate Stats
-  const stats = useMemo(() => {
+  // Aggregate Stats (Semua Kelas) - Strictly patokan kolom KET dari sheet
+  const statsAll = useMemo(() => {
     const totalSantri = records.length;
     let totalDana = 0;
     let lunasCount = 0;
+    let totalKekurangan = 0;
 
     records.forEach((r) => {
       totalDana += r.total || 0;
-      const isLunas =
-        r.keterangan.toUpperCase().includes('LUNAS') ||
-        r.total >= 1000000 ||
-        (r.total > 0 && r.kekurangan === 0);
-      if (isLunas) lunasCount++;
+      totalKekurangan += r.kekurangan || 0;
+      if (isRecordLunas(r.keterangan)) lunasCount++;
     });
 
     return {
@@ -156,14 +157,43 @@ export default function App() {
       totalDana,
       lunasCount,
       belumLunasCount: Math.max(0, totalSantri - lunasCount),
+      totalKekurangan,
     };
   }, [records]);
 
+  // Aggregate Stats (Per Kelas Terpilih) - Sinkron dengan kelas yang sedang dipilih
+  const statsClass = useMemo(() => {
+    if (!quickClass) return null;
+    const classRecords = records.filter(
+      (r) => r.kelas.trim().toLowerCase() === quickClass.trim().toLowerCase()
+    );
+    const totalSantri = classRecords.length;
+    let totalDana = 0;
+    let lunasCount = 0;
+    let totalKekurangan = 0;
+
+    classRecords.forEach((r) => {
+      totalDana += r.total || 0;
+      totalKekurangan += r.kekurangan || 0;
+      if (isRecordLunas(r.keterangan)) lunasCount++;
+    });
+
+    return {
+      totalSantri,
+      totalDana,
+      lunasCount,
+      belumLunasCount: Math.max(0, totalSantri - lunasCount),
+      totalKekurangan,
+      className: quickClass,
+    };
+  }, [records, quickClass]);
+
+  const activeStats = statScope === 'class' && statsClass ? statsClass : statsAll;
+  const isClassScope = statScope === 'class' && statsClass !== null;
+
   const openReceiptForStudent = (student: SantriRecord) => {
-    const isLunas =
-      student.keterangan.toUpperCase().includes('LUNAS') ||
-      student.total >= 1000000 ||
-      (student.total > 0 && student.kekurangan === 0);
+    // Patokan status Lunas murni dari kolom KET di Google Sheet
+    const isLunas = isRecordLunas(student.keterangan);
 
     const nominalValue = student.total > 0 ? student.total : 0;
     const formatted = formatRupiahNumberOnly(nominalValue) + ',-';
@@ -204,9 +234,8 @@ export default function App() {
   };
 
   const handleShareWhatsApp = (student: SantriRecord) => {
-    const isLunas =
-      student.keterangan.toUpperCase().includes('LUNAS') ||
-      student.total >= 1000000;
+    // Patokan status Lunas murni dari kolom KET di Google Sheet
+    const isLunas = isRecordLunas(student.keterangan);
 
     const text =
       `*BUKTI PEMBAYARAN RESMI HAFLAH 2026*\n` +
@@ -292,6 +321,63 @@ export default function App() {
 
       {/* Main Workspace Viewport (Full Desktop Layout) */}
       <main className="flex-1 w-full max-w-[1700px] mx-auto px-4 sm:px-8 lg:px-12 py-8 space-y-8">
+        {/* Scope Selector: Semua Kelas vs Kelas Terpilih */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/80 backdrop-blur-xs p-3 px-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Tampilkan Kotak Ringkasan:
+            </span>
+            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setStatScope('all')}
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                  statScope === 'all'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Semua Kelas ({statsAll.totalSantri})
+              </button>
+              {quickClass && (
+                <button
+                  type="button"
+                  onClick={() => setStatScope('class')}
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    statScope === 'class'
+                      ? 'bg-teal-700 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <span>Kelas {quickClass}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                      statScope === 'class'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {statsClass?.totalSantri || 0}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            {isClassScope ? (
+              <span>
+                Menampilkan data khusus <b>Kelas {quickClass}</b> (Dana: <b>Rp {formatRupiahNumberOnly(activeStats.totalDana)}</b> · Lunas: <b>{activeStats.lunasCount}</b>)
+              </span>
+            ) : (
+              <span>
+                Menampilkan data <b>Semua 6 Kelas</b> (Dana: <b>Rp {formatRupiahNumberOnly(statsAll.totalDana)}</b> · Lunas: <b>{statsAll.lunasCount}</b>)
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Dapodik-Inspired Luxury Metric Cards with Organic Circles & Frosted Badges */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {/* Card 1: Total Santri - Royal Indigo / Purple */}
@@ -303,13 +389,13 @@ export default function App() {
             <div className="flex items-start justify-between relative z-10">
               <div>
                 <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                  Total Santri
+                  {isClassScope ? `Santri ${quickClass}` : 'Total Santri'}
                 </span>
                 <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                  {stats.totalSantri}
+                  {activeStats.totalSantri}
                 </span>
                 <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                  santri terdaftar
+                  {isClassScope ? 'santri di kelas ini' : 'santri terdaftar'}
                 </span>
               </div>
               <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs shrink-0">
@@ -327,13 +413,13 @@ export default function App() {
             <div className="flex items-start justify-between relative z-10">
               <div>
                 <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                  Total Dana Masuk
+                  {isClassScope ? `Dana Masuk (${quickClass})` : 'Total Dana Masuk'}
                 </span>
                 <span className="text-2xl lg:text-3xl xl:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                  Rp {formatRupiahNumberOnly(stats.totalDana)}
+                  Rp {formatRupiahNumberOnly(activeStats.totalDana)}
                 </span>
                 <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                  kas terhimpun
+                  {isClassScope ? 'kas terhimpun kelas ini' : 'kas terhimpun semua kelas'}
                 </span>
               </div>
               <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs shrink-0">
@@ -351,13 +437,13 @@ export default function App() {
             <div className="flex items-start justify-between relative z-10">
               <div>
                 <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                  Status Lunas
+                  {isClassScope ? `Status Lunas (${quickClass})` : 'Status Lunas'}
                 </span>
                 <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                  {stats.lunasCount}
+                  {activeStats.lunasCount}
                 </span>
                 <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                  / {stats.totalSantri} santri ({stats.totalSantri > 0 ? Math.round((stats.lunasCount / stats.totalSantri) * 100) : 0}%)
+                  / {activeStats.totalSantri} santri ({activeStats.totalSantri > 0 ? Math.round((activeStats.lunasCount / activeStats.totalSantri) * 100) : 0}%)
                 </span>
               </div>
               <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs shrink-0">
@@ -366,26 +452,40 @@ export default function App() {
             </div>
           </div>
 
-          {/* Card 4: Jumlah Kelas - Warm Coral / Tangerine */}
+          {/* Card 4: Jumlah Kelas / Kekurangan - Warm Coral / Tangerine */}
           <div className="relative overflow-hidden bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#d97706] text-white rounded-2xl p-6 shadow-[0_8px_25px_-5px_rgba(249,115,22,0.28)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
             <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/[0.12] pointer-events-none group-hover:scale-110 transition-transform duration-500" />
             <div className="absolute right-4 -bottom-10 w-32 h-32 rounded-full bg-white/[0.08] pointer-events-none" />
             <div className="absolute -right-4 top-2 w-24 h-24 rounded-full bg-white/[0.06] pointer-events-none" />
 
             <div className="flex items-start justify-between relative z-10">
-              <div>
-                <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                  Jumlah Kelas
-                </span>
-                <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                  {allClasses.length}
-                </span>
-                <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                  tingkatan madrasah
-                </span>
-              </div>
+              {isClassScope ? (
+                <div>
+                  <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
+                    Belum Lunas ({quickClass})
+                  </span>
+                  <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
+                    {activeStats.belumLunasCount}
+                  </span>
+                  <span className="text-[11px] font-semibold text-white/80 mt-2 block">
+                    sisa kekur: Rp {formatRupiahNumberOnly(activeStats.totalKekurangan)}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
+                    Jumlah Kelas
+                  </span>
+                  <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
+                    {allClasses.length}
+                  </span>
+                  <span className="text-[11px] font-semibold text-white/80 mt-2 block">
+                    tingkatan madrasah
+                  </span>
+                </div>
+              )}
               <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs shrink-0">
-                <GraduationCap className="w-6 h-6" />
+                {isClassScope ? <Clock className="w-6 h-6" /> : <GraduationCap className="w-6 h-6" />}
               </div>
             </div>
           </div>
@@ -420,8 +520,14 @@ export default function App() {
                   <select
                     value={quickClass}
                     onChange={(e) => {
-                      setQuickClass(e.target.value);
+                      const val = e.target.value;
+                      setQuickClass(val);
                       setQuickStudentId('');
+                      if (val) {
+                        setStatScope('class');
+                      } else {
+                        setStatScope('all');
+                      }
                     }}
                     className="w-full bg-slate-50 hover:bg-white border border-slate-300 hover:border-slate-400 focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/10 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 transition-all cursor-pointer shadow-2xs"
                   >
@@ -524,26 +630,40 @@ export default function App() {
 
                     <span
                       className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 self-start ${
-                        selectedQuickStudent.keterangan.toUpperCase().includes('LUNAS') ||
-                        selectedQuickStudent.total >= 1000000
+                        isRecordLunas(selectedQuickStudent.keterangan)
                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
                           : 'bg-amber-50 text-amber-800 border border-amber-300'
                       }`}
                     >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {selectedQuickStudent.keterangan || 'STATUS PEMBAYARAN'}
+                      {isRecordLunas(selectedQuickStudent.keterangan) ? (
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      )}
+                      <span>{selectedQuickStudent.keterangan || 'BELUM LUNAS'}</span>
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mb-6">
+                  <div className={`grid grid-cols-1 ${selectedQuickStudent.kekurangan > 0 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4 text-xs mb-6`}>
                     <div className="bg-[#f8fafc] p-4 lg:p-5 rounded-xl border border-slate-200">
                       <span className="text-slate-500 font-bold block text-[11px] uppercase tracking-wider mb-1">
-                        Nominal Pembayaran
+                        Nominal Masuk
                       </span>
-                      <span className="text-2xl lg:text-3xl font-black font-mono text-slate-900 block">
+                      <span className="text-xl lg:text-2xl font-black font-mono text-slate-900 block">
                         Rp {formatRupiahNumberOnly(selectedQuickStudent.total)},-
                       </span>
                     </div>
+
+                    {selectedQuickStudent.kekurangan > 0 && (
+                      <div className="bg-amber-50/60 p-4 lg:p-5 rounded-xl border border-amber-200">
+                        <span className="text-amber-800 font-bold block text-[11px] uppercase tracking-wider mb-1">
+                          Sisa Kekurangan
+                        </span>
+                        <span className="text-xl lg:text-2xl font-black font-mono text-amber-900 block">
+                          Rp {formatRupiahNumberOnly(selectedQuickStudent.kekurangan)},-
+                        </span>
+                      </div>
+                    )}
 
                     <div className="bg-[#f8fafc] p-4 lg:p-5 rounded-xl border border-slate-200">
                       <span className="text-slate-500 font-bold block text-[11px] uppercase tracking-wider mb-1">

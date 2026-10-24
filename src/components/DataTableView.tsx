@@ -1,6 +1,7 @@
 import React from 'react';
 import { SantriRecord } from '../types';
 import { formatRupiahNumberOnly } from '../utils/terbilang';
+import { isRecordLunas } from '../utils/sheetService';
 import {
   Eye,
   Share2,
@@ -152,7 +153,7 @@ export const DataTableView: React.FC<DataTableViewProps> = ({
                 </tr>
               ) : (
                 records.map((s, idx) => {
-                  const isLunas = s.keterangan.toUpperCase().includes('LUNAS');
+                  const isLunas = isRecordLunas(s.keterangan);
                   const hasNominal = s.total > 0;
 
                   return (

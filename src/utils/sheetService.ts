@@ -195,10 +195,30 @@ export function parseCSV(csvText: string): string[][] {
   return rows;
 }
 
+/**
+ * Menentukan apakah status santri adalah LUNAS secara ketat berdasarkan kolom KET di Google Sheet.
+ * Jika sheet menyatakan "BELUM", "BELUM LUNAS", "CICILAN", atau kekurangan masih ada, maka BUKAN lunas.
+ */
+export function isRecordLunas(keterangan?: string): boolean {
+  if (!keterangan) return false;
+  const upper = keterangan.trim().toUpperCase();
+  // Kata-kata yang menandakan pembayaran belum tuntas
+  if (
+    upper.includes('BELUM') ||
+    upper.includes('KURANG') ||
+    upper.includes('TIDAK') ||
+    upper.includes('CICIL')
+  ) {
+    return false;
+  }
+  return upper.includes('LUNAS');
+}
+
 export async function fetchSheetData(spreadsheetId: string = DEFAULT_SPREADSHEET_ID): Promise<SantriRecord[]> {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv`;
-    const res = await fetch(url);
+    // Tambahkan timestamp cache-busting agar sinkronisasi data sheet selalu realtime
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&t=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`Gagal memuat Google Sheets (Status: ${res.status})`);
     }
@@ -257,6 +277,18 @@ export function parseSantriRecordsFromCSV(csvText: string): SantriRecord[] {
     // Format otomatis: "003/2710/HFLH/2026"
     const noNota = generateNoNota(santriNo, tanggalRaw, tanggalFormatted, '2026');
 
+    // Patokan utama keterangan adalah dari kolom KET di Google Sheet
+    let finalKeterangan = keteranganRaw;
+    if (!finalKeterangan) {
+      if (total > 0 && kekurangan === 0) {
+        finalKeterangan = 'LUNAS';
+      } else if (total > 0) {
+        finalKeterangan = 'BELUM LUNAS';
+      } else {
+        finalKeterangan = 'BELUM BAYAR';
+      }
+    }
+
     records.push({
       id: `santri-${r}-${sequentialNumber}`,
       no: santriNo,
@@ -268,11 +300,7 @@ export function parseSantriRecordsFromCSV(csvText: string): SantriRecord[] {
       cicilan2,
       total,
       kekurangan,
-      keterangan: keteranganRaw.toUpperCase().includes('LUNAS')
-        ? 'LUNAS'
-        : total > 0 && kekurangan === 0
-        ? 'LUNAS'
-        : keteranganRaw || (total > 0 ? 'LUNAS' : 'BELUM BAYAR'),
+      keterangan: finalKeterangan,
       notaUrl,
       rowNumber: r + 1,
       noNota,

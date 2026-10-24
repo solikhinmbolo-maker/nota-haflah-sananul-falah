@@ -5,7 +5,7 @@ import { SantriRecord, ReceiptConfig, ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
 import { RECEIPT_FONTS_CSS } from '../assets/receiptFonts';
 import { formatRupiahNumberOnly, angkaTerbilang } from '../utils/terbilang';
-import { generateNoNota } from '../utils/sheetService';
+import { generateNoNota, isRecordLunas } from '../utils/sheetService';
 import { Archive, CheckCircle2, AlertCircle, Loader2, X } from 'lucide-react';
 
 interface BatchGeneratorModalProps {
@@ -69,7 +69,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
           nominalFormatted: formatRupiahNumberOnly(s.total) + ',-',
           terbilang: angkaTerbilang(s.total),
           keterangan: s.keterangan,
-          isLunas: s.keterangan.toUpperCase().includes('LUNAS') || s.total > 0,
+          isLunas: isRecordLunas(s.keterangan),
           bendaharaName: config.bendaharaName,
           bendaharaTitle: config.bendaharaTitle,
           logoUrl: config.logoUrl,
