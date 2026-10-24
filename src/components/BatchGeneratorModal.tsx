@@ -88,8 +88,8 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
         const targetEl = document.getElementById('batch-card-inner');
         if (targetEl) {
           const options = {
-            quality: 0.95,
-            pixelRatio: 2,
+            quality: 0.99,
+            pixelRatio: 3.5, // 4025 x 1890 px Ultra HD crisp images
             backgroundColor: '#ffffff',
             width: 1150,
             height: 540,

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { toBlob, toJpeg, toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import { ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
 import { RECEIPT_FONTS_CSS } from '../assets/receiptFonts';
@@ -12,6 +13,9 @@ import {
   Edit3,
   RotateCcw,
   Sparkles,
+  FileCheck,
+  FileType,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface ReceiptModalProps {
@@ -27,6 +31,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 }) => {
   const [data, setData] = useState<ActiveReceiptData | null>(initialData);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [scale, setScale] = useState(0.85);
   const printRef = useRef<HTMLDivElement>(null);
@@ -74,17 +79,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     }, 1000);
   };
 
+  // Ultra-HD 4K JPEG Export (pixelRatio 3.5 = 4025 x 1890 px super sharp resolution)
   const handleDownloadJPEG = async () => {
     const targetNode = exportRef.current || printRef.current;
     if (!targetNode) return;
     try {
       setIsDownloading(true);
+      setDownloadFormat('JPEG 4K');
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.jpeg`;
+      const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}_4K.jpeg`;
 
       const options = {
-        quality: 0.96,
-        pixelRatio: 2, // 2x sharp resolution (2300 x 1080 px) matching exact canvas
+        quality: 0.99,
+        pixelRatio: 3.5, // 3.5x pixel ratio = 4025 x 1890 px Ultra HD 350 DPI
         backgroundColor: '#ffffff',
         width: 1150,
         height: 540,
@@ -117,19 +124,22 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       );
     } finally {
       setIsDownloading(false);
+      setDownloadFormat('');
     }
   };
 
+  // Ultra-HD PNG Export (Lossless sharp text and graphics)
   const handleDownloadPNG = async () => {
     const targetNode = exportRef.current || printRef.current;
     if (!targetNode) return;
     try {
       setIsDownloading(true);
+      setDownloadFormat('PNG HD');
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_Haflah_${cleanName}.png`;
+      const filename = `Kuitansi_Haflah_${cleanName}_HD.png`;
 
       const options = {
-        pixelRatio: 2,
+        pixelRatio: 3.5, // 3.5x pixel ratio = 4025 x 1890 px
         backgroundColor: '#ffffff',
         width: 1150,
         height: 540,
@@ -159,6 +169,50 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       alert('Gagal membuat gambar PNG: ' + ((err as Error)?.message || 'Silakan coba lagi.'));
     } finally {
       setIsDownloading(false);
+      setDownloadFormat('');
+    }
+  };
+
+  // PDF Document Export (100% Anti-Pecah di WhatsApp saat dikirim sebagai Dokumen)
+  const handleDownloadPDF = async () => {
+    const targetNode = exportRef.current || printRef.current;
+    if (!targetNode) return;
+    try {
+      setIsDownloading(true);
+      setDownloadFormat('PDF HD');
+      const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+
+      const options = {
+        quality: 0.99,
+        pixelRatio: 3.5,
+        backgroundColor: '#ffffff',
+        width: 1150,
+        height: 540,
+        fontEmbedCSS: RECEIPT_FONTS_CSS,
+        style: {
+          transform: 'none',
+          boxShadow: 'none',
+        },
+      };
+
+      const dataUrl = await toJpeg(targetNode, options);
+
+      // Create landscape PDF tailored to exact kuitansi ratio (210mm x 98.6mm)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [210, 98.6],
+      });
+
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 98.6, undefined, 'FAST');
+      pdf.save(filename);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      alert('Gagal membuat file PDF: ' + ((err as Error)?.message || 'Silakan coba lagi.'));
+    } finally {
+      setIsDownloading(false);
+      setDownloadFormat('');
     }
   };
 
@@ -206,7 +260,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/60 backdrop-blur-sm overflow-hidden">
       {/* Toolbar Atas (Bright & Clean) */}
-      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-xs">
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-teal-600"></div>
           <div>
@@ -241,7 +295,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors shadow-xs"
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>WhatsApp</span>
+            <span>Teks WA</span>
           </button>
 
           <button
@@ -252,13 +306,37 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span className="hidden sm:inline">Cetak</span>
           </button>
 
+          {/* PDF Download Button */}
+          <button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
+            title="Kirim sebagai Dokumen di WA agar 100% Anti-Pecah"
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            <span>{isDownloading && downloadFormat === 'PDF HD' ? 'Memproses...' : 'PDF Dokumen WA'}</span>
+          </button>
+
+          {/* PNG High Quality Button */}
+          <button
+            onClick={handleDownloadPNG}
+            disabled={isDownloading}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
+            title="Download PNG HD Tanpa Kompresi"
+          >
+            <FileType className="w-3.5 h-3.5" />
+            <span>{isDownloading && downloadFormat === 'PNG HD' ? 'Memproses...' : 'PNG Ultra HD'}</span>
+          </button>
+
+          {/* JPEG 4K Ultra HD Button */}
           <button
             onClick={handleDownloadJPEG}
             disabled={isDownloading}
             className="px-4 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-1.5 transition-all shadow-sm shadow-teal-600/20 disabled:opacity-50"
+            title="Unduh JPEG Resolusi Tinggi 4025x1890 px"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{isDownloading ? 'Memproses...' : 'Unduh JPEG'}</span>
+            <span>{isDownloading && downloadFormat === 'JPEG 4K' ? 'Memproses...' : 'JPEG 4K Ultra HD'}</span>
           </button>
 
           <button
@@ -432,16 +510,25 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <ReceiptCard ref={printRef} data={data} scale={scale} />
           </div>
 
-          <div className="mt-6 flex items-center gap-4 text-xs text-slate-600 bg-white/90 backdrop-blur-xs px-4 py-1.5 rounded-full border border-slate-300 shadow-xs">
-            <span>Resolusi Asli: 1150 × 540 px</span>
-            <span>·</span>
-            <span>Skala Pratinjau: {Math.round(scale * 100)}%</span>
-            <span>·</span>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-700 bg-white/95 backdrop-blur-xs px-5 py-2 rounded-full border border-slate-300 shadow-xs">
+            <span className="flex items-center gap-1.5 font-bold text-teal-800">
+              <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Hasil Ekspor: 4025 × 1890 px (Ultra HD 4K)
+            </span>
+            <span className="text-slate-300">•</span>
+            <span>Skala Layar: {Math.round(scale * 100)}%</span>
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={handleDownloadPDF}
+              className="text-rose-700 font-bold hover:underline flex items-center gap-1"
+            >
+              <FileCheck className="w-3.5 h-3.5" /> PDF Dokumen WA
+            </button>
+            <span className="text-slate-300">•</span>
             <button
               onClick={handleDownloadPNG}
-              className="text-teal-700 font-semibold hover:underline"
+              className="text-indigo-700 font-bold hover:underline"
             >
-              Unduh Versi PNG
+              PNG HD
             </button>
           </div>
         </div>
