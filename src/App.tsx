@@ -30,6 +30,7 @@ import {
   BookOpen,
   CreditCard,
   GraduationCap,
+  AlertCircle,
 } from 'lucide-react';
 
 const DEFAULT_CONFIG: ReceiptConfig = {
@@ -452,40 +453,28 @@ export default function App() {
             </div>
           </div>
 
-          {/* Card 4: Jumlah Kelas / Kekurangan - Warm Coral / Tangerine */}
+          {/* Card 4: Total Belum Masuk (Sisa Kekurangan Sheet) - Warm Coral / Tangerine */}
           <div className="relative overflow-hidden bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#d97706] text-white rounded-2xl p-6 shadow-[0_8px_25px_-5px_rgba(249,115,22,0.28)] hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group">
             <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/[0.12] pointer-events-none group-hover:scale-110 transition-transform duration-500" />
             <div className="absolute right-4 -bottom-10 w-32 h-32 rounded-full bg-white/[0.08] pointer-events-none" />
             <div className="absolute -right-4 top-2 w-24 h-24 rounded-full bg-white/[0.06] pointer-events-none" />
 
             <div className="flex items-start justify-between relative z-10">
-              {isClassScope ? (
-                <div>
-                  <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                    Belum Lunas ({quickClass})
-                  </span>
-                  <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                    {activeStats.belumLunasCount}
-                  </span>
-                  <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                    sisa kekur: Rp {formatRupiahNumberOnly(activeStats.totalKekurangan)}
-                  </span>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
-                    Jumlah Kelas
-                  </span>
-                  <span className="text-3xl lg:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
-                    {allClasses.length}
-                  </span>
-                  <span className="text-[11px] font-semibold text-white/80 mt-2 block">
-                    tingkatan madrasah
-                  </span>
-                </div>
-              )}
+              <div>
+                <span className="text-xs lg:text-sm font-semibold text-white/90 block tracking-wide">
+                  {isClassScope ? `Belum Masuk (${quickClass})` : 'Total Belum Masuk'}
+                </span>
+                <span className="text-2xl lg:text-3xl xl:text-4xl font-black font-mono tabular-nums text-white mt-3 block leading-none">
+                  Rp {formatRupiahNumberOnly(activeStats.totalKekurangan)}
+                </span>
+                <span className="text-[11px] font-semibold text-white/80 mt-2 block">
+                  {isClassScope
+                    ? `${activeStats.belumLunasCount} santri belum lunas di ${quickClass}`
+                    : `${activeStats.belumLunasCount} santri belum lunas (semua kelas)`}
+                </span>
+              </div>
               <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/25 shadow-xs shrink-0">
-                {isClassScope ? <Clock className="w-6 h-6" /> : <GraduationCap className="w-6 h-6" />}
+                <AlertCircle className="w-6 h-6" />
               </div>
             </div>
           </div>
