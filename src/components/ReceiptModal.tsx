@@ -1,21 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { toBlob, toJpeg, toPng } from 'html-to-image';
-import { jsPDF } from 'jspdf';
 import { ActiveReceiptData } from '../types';
 import { ReceiptCard } from './ReceiptCard';
 import { RECEIPT_FONTS_CSS } from '../assets/receiptFonts';
 import { formatRupiahNumberOnly, angkaTerbilang } from '../utils/terbilang';
 import {
   Download,
-  Printer,
-  Share2,
   X,
   Edit3,
   RotateCcw,
   Sparkles,
-  FileCheck,
   FileType,
-  CheckCircle2,
 } from 'lucide-react';
 
 interface ReceiptModalProps {
@@ -173,73 +168,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     }
   };
 
-  // PDF Document Export (100% Anti-Pecah di WhatsApp saat dikirim sebagai Dokumen)
-  const handleDownloadPDF = async () => {
-    const targetNode = exportRef.current || printRef.current;
-    if (!targetNode) return;
-    try {
-      setIsDownloading(true);
-      setDownloadFormat('PDF HD');
-      const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
 
-      const options = {
-        quality: 0.99,
-        pixelRatio: 3.5,
-        backgroundColor: '#ffffff',
-        width: 1150,
-        height: 540,
-        fontEmbedCSS: RECEIPT_FONTS_CSS,
-        style: {
-          transform: 'none',
-          boxShadow: 'none',
-        },
-      };
-
-      const dataUrl = await toJpeg(targetNode, options);
-
-      // Create landscape PDF tailored to exact kuitansi ratio (210mm x 98.6mm)
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: [210, 98.6],
-      });
-
-      pdf.addImage(dataUrl, 'JPEG', 0, 0, 210, 98.6, undefined, 'FAST');
-      pdf.save(filename);
-    } catch (err) {
-      console.error('Error generating PDF:', err);
-      alert('Gagal membuat file PDF: ' + ((err as Error)?.message || 'Silakan coba lagi.'));
-    } finally {
-      setIsDownloading(false);
-      setDownloadFormat('');
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleShareWhatsApp = () => {
-    const text =
-      `*BUKTI PEMBAYARAN RESMI HAFLAH 2026*\n` +
-      `*PON-PES SANANUL FALAH*\n\n` +
-      `Assalamu'alaikum Wr. Wb.\n` +
-      `Berikut rincian kuitansi pembayaran:\n` +
-      `• *No. Kuitansi* : ${data.noNota}\n` +
-      `• *Nama Santri* : ${data.namaSantri}\n` +
-      `• *Kelas* : ${data.kelas}\n` +
-      `• *Tanggal* : ${data.tanggal}\n` +
-      `• *Pembayaran* : ${data.tujuanPembayaran}\n` +
-      `• *Nominal* : Rp ${data.nominalFormatted}\n` +
-      `• *Terbilang* : ${data.terbilang}\n` +
-      `• *Status* : ${data.isLunas ? '✅ LUNAS' : '⚠️ ' + data.keterangan}\n\n` +
-      `Tanda terima: *${data.bendaharaName}* (${data.bendaharaTitle})\n` +
-      `Syukron Jazakumullah Khairan Katsiran.\nWassalamu'alaikum Wr. Wb.`;
-
-    const encoded = encodeURIComponent(text);
-    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
-  };
 
   const handleNominalChange = (newVal: string) => {
     const rawNum = parseInt(newVal.replace(/[^0-9]/g, ''), 10) || 0;
@@ -290,32 +219,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span>{isEditing ? 'Tutup Edit' : 'Edit Cepat'}</span>
           </button>
 
-          <button
-            onClick={handleShareWhatsApp}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition-colors shadow-xs"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>Teks WA</span>
-          </button>
 
-          <button
-            onClick={handlePrint}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 flex items-center gap-1.5 transition-colors shadow-xs"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">Cetak</span>
-          </button>
-
-          {/* PDF Download Button */}
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
-            title="Kirim sebagai Dokumen di WA agar 100% Anti-Pecah"
-          >
-            <FileCheck className="w-3.5 h-3.5" />
-            <span>{isDownloading && downloadFormat === 'PDF HD' ? 'Memproses...' : 'PDF Dokumen WA'}</span>
-          </button>
 
           {/* PNG High Quality Button */}
           <button
@@ -518,17 +422,17 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span>Skala Layar: {Math.round(scale * 100)}%</span>
             <span className="text-slate-300">•</span>
             <button
-              onClick={handleDownloadPDF}
-              className="text-rose-700 font-bold hover:underline flex items-center gap-1"
-            >
-              <FileCheck className="w-3.5 h-3.5" /> PDF Dokumen WA
-            </button>
-            <span className="text-slate-300">•</span>
-            <button
               onClick={handleDownloadPNG}
               className="text-indigo-700 font-bold hover:underline"
             >
               PNG HD
+            </button>
+            <span className="text-slate-300">•</span>
+            <button
+              onClick={handleDownloadJPEG}
+              className="text-teal-700 font-bold hover:underline"
+            >
+              JPEG 4K
             </button>
           </div>
         </div>
