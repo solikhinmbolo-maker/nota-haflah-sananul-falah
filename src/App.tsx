@@ -18,6 +18,7 @@ import {
 import { ReceiptModal } from './components/ReceiptModal';
 import { BatchGeneratorModal } from './components/BatchGeneratorModal';
 import { SettingsModal } from './components/SettingsModal';
+import { WhatsAppShareModal } from './components/WhatsAppShareModal';
 import {
   FileText,
   Users,
@@ -31,6 +32,7 @@ import {
   CreditCard,
   GraduationCap,
   AlertCircle,
+  Send,
 } from 'lucide-react';
 
 const DEFAULT_CONFIG: ReceiptConfig = {
@@ -77,6 +79,8 @@ export default function App() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [whatsAppStudent, setWhatsAppStudent] = useState<SantriRecord | null>(null);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   // Load initial data from Google Sheets
   useEffect(() => {
@@ -235,26 +239,8 @@ export default function App() {
   };
 
   const handleShareWhatsApp = (student: SantriRecord) => {
-    // Patokan status Lunas murni dari kolom KET di Google Sheet
-    const isLunas = isRecordLunas(student.keterangan);
-
-    const text =
-      `*BUKTI PEMBAYARAN RESMI HAFLAH 2026*\n` +
-      `*PON-PES SANANUL FALAH*\n\n` +
-      `Assalamu'alaikum Wr. Wb.\n` +
-      `Berikut rincian kuitansi pembayaran santri:\n` +
-      `• *No. Kuitansi* : ${student.noNota}\n` +
-      `• *Nama Santri* : ${student.nama}\n` +
-      `• *Kelas* : ${student.kelas}\n` +
-      `• *Tanggal* : ${student.tanggalFormatted}\n` +
-      `• *Untuk* : ${config.paymentPurpose}\n` +
-      `• *Nominal* : Rp ${formatRupiahNumberOnly(student.total)},-\n` +
-      `• *Status* : ${isLunas ? '✅ LUNAS' : '⚠️ ' + (student.keterangan || 'BELUM LUNAS')}\n\n` +
-      `Tanda terima: *${config.bendaharaName}* (${config.bendaharaTitle})\n` +
-      `Syukron Jazakumullah Khairan Katsiran.\nWassalamu'alaikum Wr. Wb.`;
-
-    const encoded = encodeURIComponent(text);
-    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    setWhatsAppStudent(student);
+    setIsWhatsAppModalOpen(true);
   };
 
   return (
@@ -676,9 +662,11 @@ export default function App() {
 
                   <button
                     onClick={() => handleShareWhatsApp(selectedQuickStudent)}
-                    className="px-5 py-3 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
+                    className="px-5 py-3 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+                    title="Kirim gambar nota resmi langsung ke WhatsApp"
                   >
-                    <span>Kirim ke WhatsApp</span>
+                    <Send className="w-4 h-4" />
+                    <span>Kirim Nota ke WhatsApp</span>
                   </button>
                 </div>
               </div>
@@ -751,6 +739,13 @@ export default function App() {
         config={config}
         onSave={handleSaveConfig}
         onReset={handleResetConfig}
+      />
+
+      <WhatsAppShareModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        student={whatsAppStudent}
+        config={config}
       />
     </div>
   );
