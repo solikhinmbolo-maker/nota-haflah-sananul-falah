@@ -18,6 +18,9 @@ import {
 import { ReceiptModal } from './components/ReceiptModal';
 import { BatchGeneratorModal } from './components/BatchGeneratorModal';
 import { SettingsModal } from './components/SettingsModal';
+import { ReceiptCard } from './components/ReceiptCard';
+import { toBlob, toPng } from 'html-to-image';
+import { RECEIPT_FONTS_CSS } from './assets/receiptFonts';
 import {
   FileText,
   Users,
@@ -32,6 +35,8 @@ import {
   GraduationCap,
   AlertCircle,
   Send,
+  Loader2,
+  X,
 } from 'lucide-react';
 
 const DEFAULT_CONFIG: ReceiptConfig = {
@@ -78,6 +83,16 @@ export default function App() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSendingWA, setIsSendingWA] = useState(false);
+  const [waToast, setWaToast] = useState<{ message: string; subtext?: string } | null>(null);
+
+  useEffect(() => {
+    if (!waToast) return;
+    const timer = setTimeout(() => {
+      setWaToast(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [waToast]);
 
   // Load initial data from Google Sheets
   useEffect(() => {
@@ -140,6 +155,44 @@ export default function App() {
     if (!quickStudentId) return null;
     return records.find((r) => r.id === quickStudentId) || null;
   }, [records, quickStudentId]);
+
+  // Persiapkan data kuitansi lengkap santri terpilih untuk render gambar nota fisik
+  const selectedReceiptData = useMemo<ActiveReceiptData | null>(() => {
+    if (!selectedQuickStudent) return null;
+    const isLunas = isRecordLunas(selectedQuickStudent.keterangan);
+    const nominalValue = selectedQuickStudent.total > 0 ? selectedQuickStudent.total : 0;
+    const formatted = formatRupiahNumberOnly(nominalValue) + ',-';
+    const terbilangStr = angkaTerbilang(nominalValue);
+    const studentNo = selectedQuickStudent.no || 1;
+    const yearToUse = config.customYear || '2026';
+    const dynamicNoNota = selectedQuickStudent.noNota || generateNoNota(
+      studentNo,
+      selectedQuickStudent.tanggalRaw,
+      selectedQuickStudent.tanggalFormatted,
+      yearToUse
+    );
+
+    return {
+      noNota: dynamicNoNota,
+      tanggal: selectedQuickStudent.tanggalFormatted,
+      namaSantri: selectedQuickStudent.nama,
+      kelas: selectedQuickStudent.kelas,
+      tujuanPembayaran: config.paymentPurpose,
+      nominal: nominalValue,
+      nominalFormatted: formatted,
+      terbilang: terbilangStr,
+      keterangan: selectedQuickStudent.keterangan,
+      isLunas,
+      bendaharaName: config.bendaharaName,
+      bendaharaTitle: config.bendaharaTitle,
+      logoUrl: config.logoUrl,
+      ttdUrl: config.ttdUrl,
+      stampUrl: config.stampUrl || '/assets/stamp.png',
+      institutionName: config.institutionName,
+      institutionAddress: config.institutionAddress,
+      receiptTitle: config.receiptTitle,
+    };
+  }, [selectedQuickStudent, config]);
 
   // Aggregate Stats (Semua Kelas) - Strictly patokan kolom KET dari sheet
   const statsAll = useMemo(() => {
@@ -235,42 +288,122 @@ export default function App() {
     setIsReceiptOpen(true);
   };
 
-  const handleShareWhatsApp = (student: SantriRecord) => {
-    const isLunas = isRecordLunas(student.keterangan);
-    const statusLabel = isLunas ? '✅ LUNAS' : `⚠️ ${student.keterangan || 'BELUM LUNAS'}`;
-    const studentNo = student.no || 1;
-    const yearToUse = config.customYear || '2026';
-    const noNota = student.noNota || generateNoNota(
-      studentNo,
-      student.tanggalRaw,
-      student.tanggalFormatted,
-      yearToUse
-    );
+  const handleShareWhatsApp = async (student: SantriRecord) => {
+    if (isSendingWA) return;
+    setIsSendingWA(true);
 
-    const messageLines = [
-      `*BUKTI PEMBAYARAN RESMI HAFLAH 2026*`,
-      `*${config.institutionName}*`,
-      ``,
-      `Assalamu'alaikum Wr. Wb.`,
-      `Berikut rincian kuitansi pembayaran santri:`,
-      `• *No. Kuitansi* : ${noNota}`,
-      `• *Nama Santri* : ${student.nama}`,
-      `• *Kelas* : ${student.kelas}`,
-      `• *Tanggal* : ${student.tanggalFormatted}`,
-      `• *Untuk* : ${config.paymentPurpose}`,
-      `• *Nominal* : Rp ${formatRupiahNumberOnly(student.total)},-`,
-      ...(student.kekurangan > 0 ? [`• *Sisa Kekurangan* : Rp ${formatRupiahNumberOnly(student.kekurangan)},-`] : []),
-      `• *Status* : ${statusLabel}`,
-      ``,
-      `Tanda terima: *${config.bendaharaName}* (${config.bendaharaTitle})`,
-      `Syukron Jazakumullah Khairan Katsiran.`,
-      `Wassalamu'alaikum Wr. Wb.`
-    ];
+    try {
+      // Cari elemen fisik kuitansi asli yang di-render di latar belakang
+      let targetEl = document.getElementById('quick-whatsapp-render-card');
+      if (!targetEl) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        targetEl = document.getElementById('quick-whatsapp-render-card');
+      }
 
-    const text = messageLines.join('\n');
-    const encoded = encodeURIComponent(text);
-    // Langsung buka WhatsApp menuju pencarian kontak dengan format teks kuitansi resmi
-    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+      if (!targetEl) {
+        throw new Error('Target nota tidak ditemukan di DOM');
+      }
+
+      const options = {
+        quality: 0.98,
+        pixelRatio: 3, // Resolusi tinggi dan tajam untuk kuitansi resmi
+        backgroundColor: '#ffffff',
+        width: 1150,
+        height: 540,
+        fontEmbedCSS: RECEIPT_FONTS_CSS,
+        style: {
+          transform: 'none',
+          boxShadow: 'none',
+        },
+      };
+
+      // Buat file Blob gambar (PNG)
+      let blob: Blob | null = null;
+      try {
+        blob = await toBlob(targetEl, options);
+      } catch (err) {
+        console.warn('toBlob fallback to toPng:', err);
+      }
+
+      if (!blob) {
+        const dataUrl = await toPng(targetEl, options);
+        const res = await fetch(dataUrl);
+        blob = await res.blob();
+      }
+
+      if (!blob) {
+        throw new Error('Gagal mengonversi nota ke gambar');
+      }
+
+      const cleanName = student.nama.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `Kuitansi_${cleanName}_${student.kelas.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+      const imageFile = new File([blob], filename, { type: 'image/png' });
+
+      // Prioritas 1: Web Share API (Level 2 dengan files)
+      // Langsung mengirim file gambar nota ke WhatsApp dan menuju ke pemilihan kontak (HP Android / Windows 11)
+      let shared = false;
+      if (
+        typeof navigator !== 'undefined' &&
+        typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [imageFile] })
+      ) {
+        try {
+          await navigator.share({
+            files: [imageFile],
+            title: `Kuitansi ${student.nama}`,
+            text: `Kuitansi Pembayaran Haflah 2026 - ${student.nama} (${student.kelas})`,
+          });
+          shared = true;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            // User membatalkan dialog share
+            return;
+          }
+          console.warn('Web Share gagal, beralih ke fallback clipboard:', shareErr);
+        }
+      }
+
+      // Prioritas 2 (Fallback Desktop bila browser tidak mendukung file share langsung):
+      // Otomatis salin gambar nota ke Clipboard & buka WhatsApp langsung ke pencarian kontak
+      if (!shared) {
+        let copied = false;
+        try {
+          if (navigator.clipboard && window.ClipboardItem) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob }),
+            ]);
+            copied = true;
+          }
+        } catch (clipErr) {
+          console.warn('Clipboard write gagal:', clipErr);
+        }
+
+        const isLunas = isRecordLunas(student.keterangan);
+        const textMsg = encodeURIComponent(
+          `*KUITANSI RESMI HAFLAH 2026*\n` +
+          `*${config.institutionName}*\n\n` +
+          `• Nama: *${student.nama}*\n` +
+          `• Kelas: *${student.kelas}*\n` +
+          `• Nominal: *Rp ${formatRupiahNumberOnly(student.total)},-*\n` +
+          `• Status: *${isLunas ? '✅ LUNAS' : student.keterangan}*\n\n` +
+          `_(Gambar nota telah disalin ke clipboard, tekan Ctrl+V di chat WhatsApp untuk menempelkan gambar nota)_`
+        );
+        window.open(`https://api.whatsapp.com/send?text=${textMsg}`, '_blank');
+
+        if (copied) {
+          setWaToast({
+            message: 'Gambar Nota Berhasil Disalin!',
+            subtext: 'Pada chat WhatsApp, langsung tekan tombol keyboard Ctrl + V (Paste) untuk mengirim gambar nota.',
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error sharing receipt image:', err);
+      const text = encodeURIComponent(`Kuitansi Resmi Haflah 2026 - ${student.nama}`);
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    } finally {
+      setIsSendingWA(false);
+    }
   };
 
   return (
@@ -692,11 +825,21 @@ export default function App() {
 
                   <button
                     onClick={() => handleShareWhatsApp(selectedQuickStudent)}
-                    className="px-5 py-3 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
-                    title="Kirim rincian kuitansi ke WhatsApp"
+                    disabled={isSendingWA}
+                    className="px-5 py-3 bg-[#10b981] hover:bg-[#059669] disabled:bg-emerald-600 disabled:opacity-75 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
+                    title="Kirim gambar nota resmi langsung ke WhatsApp"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Kirim ke WhatsApp</span>
+                    {isSendingWA ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Menyiapkan Gambar Nota...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Kirim ke WhatsApp</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -771,6 +914,48 @@ export default function App() {
         onReset={handleResetConfig}
       />
 
+      {/* Elemen render latar belakang kuitansi fisik (Offscreen) */}
+      {selectedReceiptData && (
+        <div
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: '-9999px',
+            pointerEvents: 'none',
+            opacity: 0,
+            zIndex: -1,
+          }}
+          aria-hidden="true"
+        >
+          <ReceiptCard
+            id="quick-whatsapp-render-card"
+            data={selectedReceiptData}
+            scale={1}
+          />
+        </div>
+      )}
+
+      {/* Notifikasi Toast Berhasil Salin Gambar Nota */}
+      {waToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-teal-500/50 flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+            <CheckCircle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 text-xs">
+            <p className="font-bold text-white text-sm">{waToast.message}</p>
+            {waToast.subtext && (
+              <p className="text-slate-300 mt-1 leading-relaxed">{waToast.subtext}</p>
+            )}
+          </div>
+          <button
+            onClick={() => setWaToast(null)}
+            className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Tutup notifikasi"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
