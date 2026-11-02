@@ -18,7 +18,6 @@ import {
 import { ReceiptModal } from './components/ReceiptModal';
 import { BatchGeneratorModal } from './components/BatchGeneratorModal';
 import { SettingsModal } from './components/SettingsModal';
-import { WhatsAppShareModal } from './components/WhatsAppShareModal';
 import {
   FileText,
   Users,
@@ -79,8 +78,6 @@ export default function App() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [whatsAppStudent, setWhatsAppStudent] = useState<SantriRecord | null>(null);
-  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   // Load initial data from Google Sheets
   useEffect(() => {
@@ -239,8 +236,41 @@ export default function App() {
   };
 
   const handleShareWhatsApp = (student: SantriRecord) => {
-    setWhatsAppStudent(student);
-    setIsWhatsAppModalOpen(true);
+    const isLunas = isRecordLunas(student.keterangan);
+    const statusLabel = isLunas ? '✅ LUNAS' : `⚠️ ${student.keterangan || 'BELUM LUNAS'}`;
+    const studentNo = student.no || 1;
+    const yearToUse = config.customYear || '2026';
+    const noNota = student.noNota || generateNoNota(
+      studentNo,
+      student.tanggalRaw,
+      student.tanggalFormatted,
+      yearToUse
+    );
+
+    const messageLines = [
+      `*BUKTI PEMBAYARAN RESMI HAFLAH 2026*`,
+      `*${config.institutionName}*`,
+      ``,
+      `Assalamu'alaikum Wr. Wb.`,
+      `Berikut rincian kuitansi pembayaran santri:`,
+      `• *No. Kuitansi* : ${noNota}`,
+      `• *Nama Santri* : ${student.nama}`,
+      `• *Kelas* : ${student.kelas}`,
+      `• *Tanggal* : ${student.tanggalFormatted}`,
+      `• *Untuk* : ${config.paymentPurpose}`,
+      `• *Nominal* : Rp ${formatRupiahNumberOnly(student.total)},-`,
+      ...(student.kekurangan > 0 ? [`• *Sisa Kekurangan* : Rp ${formatRupiahNumberOnly(student.kekurangan)},-`] : []),
+      `• *Status* : ${statusLabel}`,
+      ``,
+      `Tanda terima: *${config.bendaharaName}* (${config.bendaharaTitle})`,
+      `Syukron Jazakumullah Khairan Katsiran.`,
+      `Wassalamu'alaikum Wr. Wb.`
+    ];
+
+    const text = messageLines.join('\n');
+    const encoded = encodeURIComponent(text);
+    // Langsung buka WhatsApp menuju pencarian kontak dengan format teks kuitansi resmi
+    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
   };
 
   return (
@@ -663,10 +693,10 @@ export default function App() {
                   <button
                     onClick={() => handleShareWhatsApp(selectedQuickStudent)}
                     className="px-5 py-3 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95"
-                    title="Kirim gambar nota resmi langsung ke WhatsApp"
+                    title="Kirim rincian kuitansi ke WhatsApp"
                   >
                     <Send className="w-4 h-4" />
-                    <span>Kirim Nota ke WhatsApp</span>
+                    <span>Kirim ke WhatsApp</span>
                   </button>
                 </div>
               </div>
@@ -741,12 +771,6 @@ export default function App() {
         onReset={handleResetConfig}
       />
 
-      <WhatsAppShareModal
-        isOpen={isWhatsAppModalOpen}
-        onClose={() => setIsWhatsAppModalOpen(false)}
-        student={whatsAppStudent}
-        config={config}
-      />
     </div>
   );
 }
