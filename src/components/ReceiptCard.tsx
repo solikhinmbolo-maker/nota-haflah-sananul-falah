@@ -375,7 +375,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     }}
                   >
                     {data.tujuanPembayaran ||
-                      'HAFLAH PONPES SANANUL FALAH TH 2026'}
+                      'HAFLAH PONPES SANANUL FALAH TH 2027'}
                   </td>
                 </tr>
 

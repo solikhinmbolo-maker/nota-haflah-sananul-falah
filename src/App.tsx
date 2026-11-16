@@ -49,7 +49,7 @@ const DEFAULT_CONFIG: ReceiptConfig = {
   receiptTitle: 'KWITANSI PEMBAYARAN HAFLAH 2027',
   bendaharaName: 'IMAM SOLIHIN',
   bendaharaTitle: 'Bendahara Haflah 2027',
-  paymentPurpose: 'HAFLAH PONPES SANANUL FALAH TH 2026',
+  paymentPurpose: 'HAFLAH PONPES SANANUL FALAH TH 2027',
   customYear: '2027',
   watermarkLunasText: 'LUNAS',
   showWatermark: true,
@@ -68,6 +68,9 @@ export default function App() {
         }
         if (merged.bendaharaTitle === 'Bendahara Haflah 2026') {
           merged.bendaharaTitle = 'Bendahara Haflah 2027';
+        }
+        if (merged.paymentPurpose === 'HAFLAH PONPES SANANUL FALAH TH 2026') {
+          merged.paymentPurpose = 'HAFLAH PONPES SANANUL FALAH TH 2027';
         }
         if (merged.customYear === '2026' || !merged.customYear) {
           merged.customYear = '2027';
