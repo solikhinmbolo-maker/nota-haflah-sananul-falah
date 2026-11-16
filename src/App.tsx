@@ -46,11 +46,11 @@ const DEFAULT_CONFIG: ReceiptConfig = {
   institutionAddress: 'Sendang Mulyo Kec Sendang Agung Kab Lampung Tengah',
   logoUrl: 'https://i.ibb.co.com/kVycmPgF/2019-05-09-1-7.png',
   ttdUrl: 'https://i.ibb.co.com/F4JFvHzd/Ttd-ku-1.png',
-  receiptTitle: 'KWITANSI PEMBAYARAN HAFLAH 2026',
+  receiptTitle: 'KWITANSI PEMBAYARAN HAFLAH 2027',
   bendaharaName: 'IMAM SOLIHIN',
-  bendaharaTitle: 'Bendahara Haflah 2026',
+  bendaharaTitle: 'Bendahara Haflah 2027',
   paymentPurpose: 'HAFLAH PONPES SANANUL FALAH TH 2026',
-  customYear: '2026',
+  customYear: '2027',
   watermarkLunasText: 'LUNAS',
   showWatermark: true,
   stampUrl: '/assets/stamp.png',
@@ -61,7 +61,18 @@ export default function App() {
     const saved = localStorage.getItem('sananul_falah_receipt_config');
     if (saved) {
       try {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        const merged = { ...DEFAULT_CONFIG, ...parsed };
+        if (merged.receiptTitle === 'KWITANSI PEMBAYARAN HAFLAH 2026') {
+          merged.receiptTitle = 'KWITANSI PEMBAYARAN HAFLAH 2027';
+        }
+        if (merged.bendaharaTitle === 'Bendahara Haflah 2026') {
+          merged.bendaharaTitle = 'Bendahara Haflah 2027';
+        }
+        if (merged.customYear === '2026' || !merged.customYear) {
+          merged.customYear = '2027';
+        }
+        return merged;
       } catch (e) {
         return DEFAULT_CONFIG;
       }
@@ -164,8 +175,8 @@ export default function App() {
     const formatted = formatRupiahNumberOnly(nominalValue) + ',-';
     const terbilangStr = angkaTerbilang(nominalValue);
     const studentNo = selectedQuickStudent.no || 1;
-    const yearToUse = config.customYear || '2026';
-    const dynamicNoNota = selectedQuickStudent.noNota || generateNoNota(
+    const yearToUse = config.customYear || '2027';
+    const dynamicNoNota = generateNoNota(
       studentNo,
       selectedQuickStudent.tanggalRaw,
       selectedQuickStudent.tanggalFormatted,
@@ -255,7 +266,7 @@ export default function App() {
     const terbilangStr = angkaTerbilang(nominalValue);
 
     const studentNo = student.no || 1;
-    const yearToUse = config.customYear || '2026';
+    const yearToUse = config.customYear || '2027';
     const dynamicNoNota = generateNoNota(
       studentNo,
       student.tanggalRaw,
@@ -756,7 +767,7 @@ export default function App() {
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6 pb-5 border-b border-slate-100">
                     <div>
                       <span className="text-[11px] font-mono font-bold text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-md inline-block mb-1.5">
-                        {selectedQuickStudent.noNota}
+                        {selectedReceiptData?.noNota || selectedQuickStudent.noNota}
                       </span>
                       <h3 className="text-2xl lg:text-3xl font-extrabold text-slate-900 uppercase tracking-tight">
                         {selectedQuickStudent.nama}

@@ -59,7 +59,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
             s.no || i + 1,
             s.tanggalRaw,
             s.tanggalFormatted,
-            config.customYear || '2026'
+            config.customYear || '2027'
           ),
           tanggal: s.tanggalFormatted,
           namaSantri: s.nama,

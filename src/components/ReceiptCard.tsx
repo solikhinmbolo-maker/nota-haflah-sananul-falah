@@ -243,7 +243,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                 letterSpacing: '0.5px',
               }}
             >
-              {data.receiptTitle || 'KWITANSI PEMBAYARAN HAFLAH 2026'}
+              {data.receiptTitle || 'KWITANSI PEMBAYARAN HAFLAH 2027'}
             </h1>
 
             {/* Tabel Form */}
@@ -515,7 +515,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     zIndex: 2,
                   }}
                 >
-                  {data.bendaharaTitle || 'Bendahara Haflah 2026'}
+                  {data.bendaharaTitle || 'Bendahara Haflah 2027'}
                 </div>
 
                 <img

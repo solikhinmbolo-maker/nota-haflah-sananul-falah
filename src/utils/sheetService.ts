@@ -128,13 +128,13 @@ export function extractDDMM(
 /**
  * Format No. Kuitansi Otomatis:
  * "Nomor urut santri/tanggal, bulan pembayaran/HAFLAH/tahun"
- * Contoh: "003/2710/HFLH/2026"
+ * Contoh: "003/2710/HFLH/2027"
  */
 export function generateNoNota(
   no: number,
   rawDate: string | Date | undefined,
   formattedDate?: string,
-  year: string = '2026'
+  year: string = '2027'
 ): string {
   const paddedNo = String(no).padStart(3, '0');
   const ddmm = extractDDMM(rawDate, formattedDate);
@@ -274,8 +274,8 @@ export function parseSantriRecordsFromCSV(csvText: string): SantriRecord[] {
     const santriNo = !isNaN(parsedCol0) && parsedCol0 > 0 ? parsedCol0 : sequentialNumber;
 
     const tanggalFormatted = formatIndonesianDate(tanggalRaw);
-    // Format otomatis: "003/2710/HFLH/2026"
-    const noNota = generateNoNota(santriNo, tanggalRaw, tanggalFormatted, '2026');
+    // Format otomatis: "003/2710/HFLH/2027"
+    const noNota = generateNoNota(santriNo, tanggalRaw, tanggalFormatted, '2027');
 
     // Patokan utama keterangan adalah dari kolom KET di Google Sheet
     let finalKeterangan = keteranganRaw;
@@ -348,8 +348,8 @@ export function getFallbackData(): SantriRecord[] {
   return rawList.map((item, index) => {
     const num = index + 1;
     const tanggalFormatted = formatIndonesianDate(item.tgl);
-    // Format otomatis: "003/2710/HFLH/2026"
-    const noNota = generateNoNota(num, item.tgl, tanggalFormatted, '2026');
+    // Format otomatis: "003/2710/HFLH/2027"
+    const noNota = generateNoNota(num, item.tgl, tanggalFormatted, '2027');
 
     return {
       id: `fallback-${num}`,
