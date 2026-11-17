@@ -41,7 +41,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
     setCompleted(false);
 
     const zip = new JSZip();
-    const folder = zip.folder(`Kuitansi_${classNameTitle.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    const folder = zip.folder(`Kwitansi_${classNameTitle.replace(/[^a-zA-Z0-9]/g, '_')}`);
 
     const renderContainer = document.getElementById('batch-render-target');
     if (!renderContainer) {
@@ -129,13 +129,13 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
 
       const link = document.createElement('a');
       link.href = URL.createObjectURL(zipContent);
-      link.download = `Semua_Kuitansi_${classNameTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Haflah2026.zip`;
+      link.download = `Semua_Kwitansi_${classNameTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Haflah2027.zip`;
       link.click();
 
       setCompleted(true);
     } catch (err) {
       console.error('Batch generation error:', err);
-      alert('Terjadi kesalahan saat membuat paket kuitansi.');
+      alert('Terjadi kesalahan saat membuat paket kwitansi.');
     } finally {
       setIsProcessing(false);
     }
@@ -158,7 +158,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900">
-              Unduh Massal Kuitansi (ZIP)
+              Unduh Massal Kwitansi (ZIP)
             </h3>
             <p className="text-xs text-slate-500">
               Kelas: <span className="text-teal-700 font-bold">{classNameTitle}</span>
@@ -213,7 +213,7 @@ export const BatchGeneratorModal: React.FC<BatchGeneratorModalProps> = ({
             <div>
               <p className="font-bold">Berhasil Membuat Arsip ZIP!</p>
               <p className="text-[11px] text-emerald-700">
-                Semua {validStudents.length} kuitansi telah tersimpan ke dalam folder download Anda.
+                Semua {validStudents.length} kwitansi telah tersimpan ke dalam folder download Anda.
               </p>
             </div>
           </div>

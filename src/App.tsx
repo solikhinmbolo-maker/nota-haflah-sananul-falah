@@ -350,7 +350,7 @@ export default function App() {
       }
 
       const cleanName = student.nama.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_${cleanName}_${student.kelas.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+      const filename = `Kwitansi_${cleanName}_${student.kelas.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
       const imageFile = new File([blob], filename, { type: 'image/png' });
 
       // Prioritas 1: Web Share API (Level 2 dengan files)
@@ -364,8 +364,8 @@ export default function App() {
         try {
           await navigator.share({
             files: [imageFile],
-            title: `Kuitansi ${student.nama}`,
-            text: `Kuitansi Pembayaran Haflah 2026 - ${student.nama} (${student.kelas})`,
+            title: `Kwitansi ${student.nama}`,
+            text: `Kwitansi Pembayaran Haflah ${config.customYear || '2027'} - ${student.nama} (${student.kelas}) | Nominal: Rp ${formatRupiahNumberOnly(student.total)},-`,
           });
           shared = true;
         } catch (shareErr: any) {
@@ -394,7 +394,7 @@ export default function App() {
 
         const isLunas = isRecordLunas(student.keterangan);
         const textMsg = encodeURIComponent(
-          `*KUITANSI RESMI HAFLAH 2026*\n` +
+          `*KWITANSI RESMI HAFLAH ${config.customYear || '2027'}*\n` +
           `*${config.institutionName}*\n\n` +
           `• Nama: *${student.nama}*\n` +
           `• Kelas: *${student.kelas}*\n` +
@@ -413,7 +413,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error sharing receipt image:', err);
-      const text = encodeURIComponent(`Kuitansi Resmi Haflah 2026 - ${student.nama}`);
+      const text = encodeURIComponent(`Kwitansi Resmi Haflah ${config.customYear || '2027'} - ${student.nama} (${student.kelas}) | Nominal: Rp ${formatRupiahNumberOnly(student.total)},-`);
       window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
     } finally {
       setIsSendingWA(false);
@@ -738,7 +738,7 @@ export default function App() {
                   <FileText className="w-4 h-4" />
                   <span>
                     {selectedQuickStudent
-                      ? 'Tampilkan Kuitansi Resmi'
+                      ? 'Tampilkan Kwitansi Resmi'
                       : 'Pilih Santri Dahulu'}
                   </span>
                 </button>
@@ -834,7 +834,7 @@ export default function App() {
                     className="px-5 py-3 bg-[#0284c7] hover:bg-[#0369a1] text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
-                    <span>Buka & Unduh Kuitansi (1150×540)</span>
+                    <span>Buka & Unduh Kwitansi (1150×540)</span>
                   </button>
 
                   <button
@@ -864,7 +864,7 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">
-                    Pilih Santri untuk Menampilkan Dokumen Kuitansi
+                    Pilih Santri untuk Menampilkan Dokumen Kwitansi
                   </h3>
                   <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
                     Pilih kelas dan nama santri pada formulir di sebelah kiri untuk melihat rincian nota dan mengunduh format JPEG 300 DPI resmi Haflah 2026.

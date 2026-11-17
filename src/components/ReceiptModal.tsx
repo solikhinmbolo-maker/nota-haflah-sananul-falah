@@ -82,7 +82,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       setIsDownloading(true);
       setDownloadFormat('JPEG 4K');
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}_4K.jpeg`;
+      const filename = `Kwitansi_Haflah_${cleanName}_${data.noNota.replace(/[^a-zA-Z0-9]/g, '-')}_4K.jpeg`;
 
       const options = {
         quality: 0.99,
@@ -114,7 +114,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     } catch (err) {
       console.error('Error generating JPEG:', err);
       alert(
-        'Gagal membuat gambar kuitansi: ' +
+        'Gagal membuat gambar kwitansi: ' +
           ((err as Error)?.message || 'Silakan coba lagi atau gunakan opsi Cetak.')
       );
     } finally {
@@ -131,7 +131,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       setIsDownloading(true);
       setDownloadFormat('PNG HD');
       const cleanName = data.namaSantri.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `Kuitansi_Haflah_${cleanName}_HD.png`;
+      const filename = `Kwitansi_Haflah_${cleanName}_HD.png`;
 
       const options = {
         pixelRatio: 3.5, // 3.5x pixel ratio = 4025 x 1890 px
@@ -194,7 +194,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <div className="w-2.5 h-2.5 rounded-full bg-teal-600"></div>
           <div>
             <h2 className="text-sm md:text-base font-bold text-slate-900 tracking-wide flex items-center gap-2">
-              Pratinjau Kuitansi Resmi
+              Pratinjau Kwitansi Resmi
               <span className="text-xs font-semibold text-slate-500 font-mono">
                 ({data.noNota})
               </span>
@@ -260,7 +260,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           <div className="w-full lg:w-80 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 p-5 space-y-4 shrink-0 overflow-y-auto max-h-72 lg:max-h-full shadow-md z-10">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-800 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Penyesuaian Kuitansi
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Penyesuaian Kwitansi
               </span>
               <button
                 onClick={() => setData(initialData)}
@@ -273,7 +273,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             <div>
               <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                No. Kuitansi
+                No. Kwitansi
               </label>
               <input
                 type="text"
@@ -289,7 +289,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
             <div>
               <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                Tanggal Kuitansi
+                Tanggal Kwitansi
               </label>
               <input
                 type="text"

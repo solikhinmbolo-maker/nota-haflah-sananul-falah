@@ -43,7 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-900">
-              Pengaturan Kuitansi & Integrasi Sheet
+              Pengaturan Kwitansi & Integrasi Sheet
             </h3>
             <p className="text-xs text-slate-500">
               Sesuaikan data kop surat, bendahara, dan sumber Google Sheets
@@ -87,7 +87,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <div>
               <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                Judul Kuitansi Resmi
+                Judul Kwitansi Resmi
               </label>
               <input
                 type="text"

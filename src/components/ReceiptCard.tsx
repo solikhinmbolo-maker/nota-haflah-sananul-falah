@@ -166,7 +166,7 @@ export const ReceiptCard = forwardRef<HTMLDivElement, ReceiptCardProps>(
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  No. Kuitansi
+                  No. Kwitansi
                 </span>
                 <span style={{ color: '#499f9e', fontWeight: 800 }}>:</span>
                 <span

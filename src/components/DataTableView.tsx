@@ -118,7 +118,7 @@ export const DataTableView: React.FC<DataTableViewProps> = ({
             className="px-4 py-2 bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 text-teal-800 border-2 border-teal-300 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all whitespace-nowrap self-start md:self-auto shadow-xs active:scale-95"
           >
             <Archive className="w-3.5 h-3.5 text-teal-700" />
-            <span>Unduh Semua Kuitansi ({selectedClass})</span>
+            <span>Unduh Semua Kwitansi ({selectedClass})</span>
           </button>
         )}
       </div>
@@ -208,10 +208,10 @@ export const DataTableView: React.FC<DataTableViewProps> = ({
                           <button
                             onClick={() => onOpenReceipt(s)}
                             className="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-600 text-teal-800 hover:text-white border border-teal-200 hover:border-teal-600 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs active:scale-95"
-                            title="Tampilkan & Cetak Kuitansi"
+                            title="Tampilkan & Cetak Kwitansi"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>Kuitansi</span>
+                            <span>Kwitansi</span>
                           </button>
 
                           <button
