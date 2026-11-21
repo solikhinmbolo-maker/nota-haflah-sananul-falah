@@ -92,6 +92,7 @@ export default function App() {
   // Quick form selection state
   const [quickClass, setQuickClass] = useState<string>('');
   const [quickStudentId, setQuickStudentId] = useState<string>('');
+  const [studentSearch, setStudentSearch] = useState<string>('');
   const [statScope, setStatScope] = useState<'all' | 'class'>('all');
 
   // Modals
@@ -166,6 +167,18 @@ export default function App() {
       (r) => r.kelas.trim().toLowerCase() === quickClass.trim().toLowerCase()
     );
   }, [records, quickClass]);
+
+  // Search results filtered by class (if selected) or all classes
+  const searchedStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return [];
+    const source = quickClass ? quickStudents : records;
+    return source.filter(
+      (r) =>
+        r.nama.toLowerCase().includes(query) ||
+        (!quickClass && r.kelas.toLowerCase().includes(query))
+    );
+  }, [studentSearch, quickClass, quickStudents, records]);
 
   const selectedQuickStudent = useMemo(() => {
     if (!quickStudentId) return null;
@@ -679,6 +692,7 @@ export default function App() {
                       const val = e.target.value;
                       setQuickClass(val);
                       setQuickStudentId('');
+                      setStudentSearch('');
                       if (val) {
                         setStatScope('class');
                       } else {
@@ -696,56 +710,164 @@ export default function App() {
                   </select>
                 </div>
 
-                {/* Filter Santri */}
+                {/* Filter & Pencarian Nama Santri */}
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-slate-500" />
-                    Nama Santri
-                  </label>
-                  <select
-                    value={quickStudentId}
-                    onChange={(e) => setQuickStudentId(e.target.value)}
-                    disabled={!quickClass}
-                    className="w-full bg-slate-50 hover:bg-white border border-slate-300 hover:border-slate-400 focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 transition-all cursor-pointer shadow-2xs"
-                  >
-                    {!quickClass ? (
-                      <option value="">Pilih Kelas Dahulu</option>
-                    ) : quickStudents.length === 0 ? (
-                      <option value="">Tidak ada santri di kelas ini</option>
-                    ) : (
-                      <>
-                        <option value="">-- Pilih Nama Santri --</option>
-                        {quickStudents.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.nama} ({s.total > 0 ? `Rp ${formatRupiahNumberOnly(s.total)}` : 'Belum Bayar'})
-                          </option>
-                        ))}
-                      </>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span>Nama Santri</span>
+                    </label>
+                    {quickClass && (
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {quickStudents.length} santri
+                      </span>
                     )}
-                  </select>
-                </div>
+                  </div>
 
-                {/* Primary Button: Tampilkan Kuitansi */}
-                <button
-                  disabled={!selectedQuickStudent}
-                  onClick={() => {
-                    if (selectedQuickStudent) {
-                      openReceiptForStudent(selectedQuickStudent);
-                    }
-                  }}
-                  className={`w-full py-3.5 px-6 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs ${
-                    selectedQuickStudent
-                      ? 'bg-[#0284c7] hover:bg-[#0369a1] text-white cursor-pointer active:scale-[0.99]'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>
-                    {selectedQuickStudent
-                      ? 'Tampilkan Kwitansi Resmi'
-                      : 'Pilih Santri Dahulu'}
-                  </span>
-                </button>
+                  {/* Kotak Pencarian Cepat Nama Santri */}
+                  <div className="relative mb-2.5">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      placeholder={
+                        quickClass
+                          ? `Cari nama di Kelas ${quickClass}...`
+                          : 'Cari cepat nama santri (semua kelas)...'
+                      }
+                      className="w-full bg-slate-50 hover:bg-white border border-slate-300 hover:border-slate-400 focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/10 rounded-xl pl-10 pr-9 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all shadow-2xs"
+                    />
+                    {studentSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setStudentSearch('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                        aria-label="Hapus pencarian"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Hasil Pencarian Instan atau Dropdown Pilih Nama */}
+                  {studentSearch.trim().length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden shadow-xs">
+                      <div className="px-3.5 py-2 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-600">
+                        <span>
+                          Ditemukan {searchedStudents.length} santri
+                          {quickClass ? ` di ${quickClass}` : ' (semua kelas)'}
+                        </span>
+                        {quickClass && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuickClass('');
+                              setStatScope('all');
+                            }}
+                            className="text-teal-700 hover:underline cursor-pointer"
+                          >
+                            Cari semua kelas
+                          </button>
+                        )}
+                      </div>
+
+                      {searchedStudents.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-500 space-y-2">
+                          <p>
+                            Tidak ada santri dengan nama{' '}
+                            <span className="font-bold text-slate-700">
+                              "{studentSearch.trim()}"
+                            </span>
+                          </p>
+                          {quickClass && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuickClass('');
+                                setStatScope('all');
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 font-bold hover:bg-teal-100 transition-colors cursor-pointer"
+                            >
+                              Coba cari di semua kelas
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto divide-y divide-slate-200/70 bg-white">
+                          {searchedStudents.map((s) => {
+                            const lunas = isRecordLunas(s.keterangan);
+                            const isSelected = s.id === quickStudentId;
+                            return (
+                              <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => {
+                                  setQuickClass(s.kelas);
+                                  setQuickStudentId(s.id);
+                                  setStatScope('class');
+                                  setStudentSearch('');
+                                }}
+                                className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-teal-50/90'
+                                    : 'hover:bg-slate-50 active:bg-teal-50/60'
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <div className="text-xs font-extrabold text-slate-900 truncate">
+                                    {s.nama}
+                                  </div>
+                                  <div className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                    {!quickClass && (
+                                      <span className="text-slate-700 font-semibold">
+                                        {s.kelas} ·{' '}
+                                      </span>
+                                    )}
+                                    {s.total > 0
+                                      ? `Rp ${formatRupiahNumberOnly(s.total)}`
+                                      : 'Belum Bayar'}
+                                  </div>
+                                </div>
+                                <span
+                                  className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${
+                                    lunas
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                                  }`}
+                                >
+                                  {lunas ? 'LUNAS' : s.keterangan || 'BELUM'}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <select
+                      value={quickStudentId}
+                      onChange={(e) => setQuickStudentId(e.target.value)}
+                      disabled={!quickClass}
+                      className="w-full bg-slate-50 hover:bg-white border border-slate-300 hover:border-slate-400 focus:border-teal-600 focus:bg-white focus:ring-2 focus:ring-teal-600/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 transition-all cursor-pointer shadow-2xs"
+                    >
+                      {!quickClass ? (
+                        <option value="">Pilih Kelas Dahulu</option>
+                      ) : quickStudents.length === 0 ? (
+                        <option value="">Tidak ada santri di kelas ini</option>
+                      ) : (
+                        <>
+                          <option value="">-- Pilih Nama Santri --</option>
+                          {quickStudents.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.nama} ({s.total > 0 ? `Rp ${formatRupiahNumberOnly(s.total)}` : 'Belum Bayar'})
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 
