@@ -19,6 +19,8 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { BatchGeneratorModal } from './components/BatchGeneratorModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ReceiptCard } from './components/ReceiptCard';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { toBlob, toPng } from 'html-to-image';
 import { RECEIPT_FONTS_CSS } from './assets/receiptFonts';
 import {
@@ -453,8 +455,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: Sinkron Sheet + Thick Gear Icon for Settings (No Text) */}
+          {/* Right: PWA Install + Sinkron Sheet + Thick Gear Icon for Settings */}
           <div className="flex items-center gap-2.5 shrink-0">
+            <PWAInstallButton />
+
             {/* Tombol Sinkron Sheet */}
             <button
               onClick={handleRefreshData}
@@ -970,6 +974,8 @@ export default function App() {
           </button>
         </div>
       )}
+
+      <OfflineIndicator />
     </div>
   );
 }
